@@ -25,9 +25,9 @@ function getHashIP() {
     })
 }
 
-async function wait(ref){
+async function wait(ref) {
   return new Promise(async (resolve, reject) => {
-    while (ref._userId == undefined){
+    while (ref._userId == undefined) {
       await new Promise(r => setTimeout(r, 300));
     }
     resolve(ref._userId);
@@ -35,22 +35,30 @@ async function wait(ref){
 }
 
 export async function bcaWeb3Connect(address) {
-  if (address === undefined ) {
-    throw new Error('No address provided to bcaWeb3Connect library')
+  // return firebase token
+  if (address === undefined) {
+    throw new Error('No address provided to bcaWeb3Connect library argument')
   }
 
   const cookie = Cookies.get(cookieName);
-  const id5Status = await ID5.init({ partnerId: 1238 })
+  if (cookie) {  throw new Error('cookie >>>' + cookie)}
+  else {
+  // undefined (cookie not exist before)
+  console.log(cookie)
+  }
+  const id5Status = await ID5.init({
+    partnerId: 1238
+  })
   const id5Device = await id5Status.onAvailable((status) => {
     return status.getUserId()
   });
 
-  const promiseBatch = [nanoid(32),getHashIP(),wait(id5Device)]
+  const promiseBatch = [nanoid(32), getHashIP(), wait(id5Device)]
 
   const resolvedBatch = await Promise.all(promiseBatch)
     .then(arr => arr)
-    .catch(err => console.error('error >>> ', err))
-
+    .catch(err => {throw new Error('promiseBatch error >>>' + err)})
+  const signupUrl = 'https://us-central1-web3-cookie.cloudfunctions.net/signup';
   const dataPackage = {
     uuid: `${resolvedBatch[0]}`,
     hashIp: `${resolvedBatch[1]}`,
@@ -58,7 +66,18 @@ export async function bcaWeb3Connect(address) {
     address: address,
     hostname: window.location.hostname
   };
-  return dataPackage;
+
+  const firebaseToken = await axios.post(signupUrl, {
+    dataPackage: dataPackage,
+  }).then((response) => {
+    Cookies.set(cookieName, response.data.token, { expires: 365 })
+    window.localStorage.setItem(cookieName, response.data.token);
+    return response.data.token
+  }).catch(function(error) {
+    throw new Error('signup error >>> ' + error)
+  });
+
+  return firebaseToken;
 }
 
 export default {
