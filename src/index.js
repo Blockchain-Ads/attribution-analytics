@@ -3,19 +3,21 @@ import {
 } from "nanoid";
 import axios from "axios";
 import Cookies from "js-cookie";
-// import ID5 from '@id5io/id5-api.js';
 import './id5.js';
-
+import {
+  ethers
+} from "ethers";
 
 const cookieName = "BCA-universal-cookie";
 
-function getIP() {
+function getHashIP() {
+  // return promise
   return axios.get('https://www.cloudflare.com/cdn-cgi/trace')
     .then(function(response) {
       const data = response.data;
       const ipRegex = /[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}/
       const ip = data.match(ipRegex)[0];
-      return ip
+      return ethers.utils.id(`${ip}`);
     })
     .catch(function(error) {
       // handle error
@@ -32,27 +34,31 @@ async function wait(ref){
   });
 }
 
-export async function bcaWeb3Connect() {
-  const uuid = '';
+export async function bcaWeb3Connect(address) {
+  if (address === undefined ) {
+    throw new Error('No address provided to bcaWeb3Connect library')
+  }
 
   const cookie = Cookies.get(cookieName);
-  console.log("ID5 >>>",ID5)
   const id5Status = await ID5.init({ partnerId: 1238 })
   const id5Device = await id5Status.onAvailable((status) => {
     return status.getUserId()
   });
-  const id5DeviceId = await wait(id5Device);
-console.log('ID5DEVICEID', id5DeviceId)
 
+  const promiseBatch = [nanoid(32),getHashIP(),wait(id5Device)]
 
-  const promisePackage = [getIP(), nanoid(32)]
-
-
-
-  await Promise.all(promisePackage)
-    .then(res => console.info('success', res))
+  const resolvedBatch = await Promise.all(promiseBatch)
+    .then(arr => arr)
     .catch(err => console.error('error >>> ', err))
-  return '';
+
+  const dataPackage = {
+    uuid: `${resolvedBatch[0]}`,
+    hashIp: `${resolvedBatch[1]}`,
+    id5DeviceId: `${resolvedBatch[2]}`,
+    address: address,
+    hostname: window.location.hostname
+  };
+  return dataPackage;
 }
 
 export default {
