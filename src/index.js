@@ -4,9 +4,15 @@ import {
 import axios from "axios";
 import Cookies from "js-cookie";
 import './id5.js';
+
+const STATUS_OK = "OK";
+const STATUS_FAIL = "FAIL";
+
+
 import {
   ethers
 } from "ethers";
+import jwt_decode from "jwt-decode";
 
 const cookieName = "BCA-universal-cookie";
 
@@ -21,7 +27,7 @@ function getHashIP() {
     })
     .catch(function(error) {
       // handle error
-      console.error('error >>> ', error);
+      console.error('bcaWeb3Connect getHashIP error >>> ', error);
     })
 }
 
@@ -34,18 +40,57 @@ async function wait(ref) {
   });
 }
 
+function checkJwtDecode(token){
+  try {
+    return {value:jwt_decode(cookie), status: STATUS_OK};
+  } catch (e) {
+    return {value: undefined, status: STATUS_OK}
+  }
+}
+
 export async function bcaWeb3Connect(address) {
   // return firebase token
   if (address === undefined) {
-    throw new Error('No address provided to bcaWeb3Connect library argument')
+    throw new Error('bcaWeb3Connect: No address provided to bcaWeb3Connect library argument')
   }
+  // ------- check if cookie need to create or update -----------
+
+  const timeNow = Math.floor(Date.now() / 1000) // in seconds
+  const oneHour = (60 * 60) // in seconds
 
   const cookie = Cookies.get(cookieName);
-  if (cookie) {  throw new Error('cookie >>>' + cookie)}
-  else {
-  // undefined (cookie not exist before)
-  console.log(cookie)
+  console.log('COOKIE', cookie)
+  if (cookie) {
+    // cookie already exists
+    // TODO check expired
+    if (checkJwtDecode(cookie).status == STATUS_OK){
+      // jwt decoded success
+      const cookieDecoded = jwt_decode(cookie);
+      const cookieIsExpired = (cookieDecoded.exp + oneHour) < timeNow
+      if (!cookieIsExpired) {
+        // Cookie not expired
+        // Do nothing
+        return
+      }
+      else {
+        // Cookie has expired
+        Cookies.remove(cookieName)
+        // Continue to create a cookie
+      }
+    }
+    else {
+      // jwt decoded unsuccess
+      Cookies.remove(cookieName)
+      //   // Continue to create a cookie
+    }
   }
+  // else {
+  // // undefined (cookie not exist before)
+  // // Continue to create a cookie
+  // }
+  console.log('COOKIE undefined')
+
+  // ------- prepare cookie data -----------
   const id5Status = await ID5.init({
     partnerId: 1238
   })
@@ -57,7 +102,10 @@ export async function bcaWeb3Connect(address) {
 
   const resolvedBatch = await Promise.all(promiseBatch)
     .then(arr => arr)
-    .catch(err => {throw new Error('promiseBatch error >>>' + err)})
+    .catch(err => {
+      throw new Error('bcaWeb3Connect: promiseBatch error >>>' + err)
+    })
+
   const signupUrl = 'https://us-central1-web3-cookie.cloudfunctions.net/signup';
   const dataPackage = {
     uuid: `${resolvedBatch[0]}`,
@@ -70,11 +118,13 @@ export async function bcaWeb3Connect(address) {
   const firebaseToken = await axios.post(signupUrl, {
     dataPackage: dataPackage,
   }).then((response) => {
-    Cookies.set(cookieName, response.data.token, { expires: 365 })
+    Cookies.set(cookieName, response.data.token, {
+      expires: 365
+    })
     window.localStorage.setItem(cookieName, response.data.token);
     return response.data.token
   }).catch(function(error) {
-    throw new Error('signup error >>> ' + error)
+    throw new Error('bcaWeb3Connect: signup error >>> ' + error)
   });
 
   return firebaseToken;
