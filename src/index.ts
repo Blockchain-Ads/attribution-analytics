@@ -4,18 +4,14 @@ import {
 import axios from "axios";
 import Cookies from "js-cookie";
 import './id5.js';
- declare let ID5: any;
-
-const STATUS_OK = "OK";
-const STATUS_FAIL = "FAIL";
-
+declare let ID5: any;
 
 import {
   ethers
 } from "ethers";
-import jwtDecode , { JwtPayload }  from "jwt-decode";
+import jwtDecode, { JwtPayload } from "jwt-decode";
 
-const cookieName = "BCA-universal-cookie";
+const cookieName: string = "BCA-universal-cookie";
 
 function getHashIP() {
   // return promise
@@ -32,7 +28,7 @@ function getHashIP() {
     })
 }
 
-async function wait(ref) {
+async function wait(ref): Promise<string> {
   return new Promise(async (resolve, reject) => {
     while (ref._userId == undefined) {
       await new Promise(r => setTimeout(r, 300));
@@ -41,15 +37,33 @@ async function wait(ref) {
   });
 }
 
-function checkJwtDecode(token: string){
+function checkJwtDecode(token: string) {
   try {
-    return {value:jwtDecode<JwtPayload>(token), status: STATUS_OK};
+    return { value: jwtDecode<JwtPayload>(token), status: STATUS_OK };
   } catch (e) {
-    return {value: undefined, status: STATUS_OK}
+    return { value: undefined, status: STATUS_OK }
   }
 }
+type status_ok = string
+const STATUS_OK = "OK";
 
-export async function bcaWeb3Connect(address) {
+type ErrorCode = 1 | 4
+const ERROR_CODE = {
+  SIGNUP: 4
+}
+
+type TypeStatus = status_ok | Error;
+type Error = {
+  errorCode: number;
+  reason: string;
+};
+
+type BcaConnectResult = {
+  result: string | Array<any>;
+  status: TypeStatus;
+};
+
+export async function bcaWeb3Connect(address: string): Promise<BcaConnectResult> {
   // return firebase token
   if (address === undefined) {
     throw new Error('bcaWeb3Connect: No address provided to bcaWeb3Connect library argument')
@@ -65,7 +79,7 @@ export async function bcaWeb3Connect(address) {
     // cookie already exists
     // TODO check expired
     const checkedJwt = checkJwtDecode(cookie)
-    if (checkedJwt.status == STATUS_OK){
+    if (checkedJwt.status == STATUS_OK) {
       // jwt decoded success
       const cookieDecoded = checkedJwt.value;
       const cookieIsExpired = (cookieDecoded.exp + oneHour) < timeNow
@@ -98,37 +112,52 @@ export async function bcaWeb3Connect(address) {
   const id5Device = await id5Status.onAvailable((status) => {
     return status.getUserId()
   });
+  const uuid: string = nanoid(32)
+  const promiseBatch: [Promise<string | void>, Promise<string>] = [getHashIP(), wait(id5Device)]
 
-  const promiseBatch = [nanoid(32), getHashIP(), wait(id5Device)]
+  const resolvedBatch: BcaConnectResult = await Promise.all(promiseBatch)
+    .then((array:Array<any>):BcaConnectResult => {
 
-  const resolvedBatch = await Promise.all(promiseBatch)
-    .then(arr => arr)
-    .catch(err => {
-      throw new Error('bcaWeb3Connect: promiseBatch error >>>' + err)
+      return { result: array, status: STATUS_OK };
+    }).catch((error:any):BcaConnectResult => {
+      return { result: "", status: { errorCode: ERROR_CODE.SIGNUP, reason: `${error}` } };
     })
 
-  const signupUrl = 'https://us-central1-web3-cookie.cloudfunctions.net/signup';
-  const dataPackage = {
-    uuid: `${resolvedBatch[0]}`,
-    hashIp: `${resolvedBatch[1]}`,
-    id5DeviceId: `${resolvedBatch[2]}`,
+  if(resolvedBatch.status != STATUS_OK){
+    return resolvedBatch
+  }
+
+  const signupUrl: string = 'https://us-central1-web3-cookie.cloudfunctions.net/signup';
+
+  type DataPackage = {
+    uuid: string;
+    hashIp: string;
+    id5DeviceId: string;
+    address: string;
+    hostname: string;
+  }
+  const dataPackage: DataPackage = {
+    uuid: `${uuid}`,
+    hashIp: `${resolvedBatch.result[0]}`,
+    id5DeviceId: `${resolvedBatch.result[1]}`,
     address: address,
     hostname: window.location.hostname
   };
 
-  const firebaseToken = await axios.post(signupUrl, {
+  const bcaConnectResult: BcaConnectResult = await axios.post(signupUrl, {
     dataPackage: dataPackage,
-  }).then((response) => {
-    Cookies.set(cookieName, response.data.token, {
+  }).then((response): BcaConnectResult => {
+    const token: string = response.data.token
+    Cookies.set(cookieName, token, {
       expires: 365
     })
-    window.localStorage.setItem(cookieName, response.data.token);
-    return response.data.token
-  }).catch(function(error) {
-    throw new Error('bcaWeb3Connect: signup error >>> ' + error)
+    window.localStorage.setItem(cookieName, token);
+    return { result: token, status: STATUS_OK };
+  }).catch(function(error): BcaConnectResult {
+    return { result: "", status: { errorCode: ERROR_CODE.SIGNUP, reason: `${error}` } };
   });
 
-  return firebaseToken;
+  return bcaConnectResult
 }
 
 export default {
