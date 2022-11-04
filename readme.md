@@ -47,14 +47,15 @@ Or if you prefer using Yarn:
 $ yarn add --dev bca-web3-lib
 ```
 
+```js
+import { bcaWeb3Connect } from "bca-web3-lib";
+bcaWeb3Connect("0x7Da81FA63Ee343De9ca33ab7A16be3D022549828");
+```
+
 ### Demo
 
-<iframe src="https://codesandbox.io/embed/npm-bcaweb3connect-wgqqty?fontsize=14&hidenavigation=1&theme=dark"
-     style="width:100%; height:500px; border:0; border-radius: 4px; overflow:hidden;"
-     title="npm-bcaWeb3Connect"
-     allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
-     sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
-   ></iframe>
+[Codesandbox Demo](https://codesandbox.io/s/npm-bcaweb3connect-wgqqty?file=/src/index.js:23-131)
+
 
 [![Edit npm-bcaWeb3Connect](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/npm-bcaweb3connect-wgqqty?fontsize=14&hidenavigation=1&theme=dark)
 
