@@ -40,8 +40,9 @@ async function wait(ref): Promise<string> {
 function checkJwtDecode(token: string) {
   try {
     return { value: jwtDecode<JwtPayload>(token), status: STATUS_OK };
-  } catch (e) {
-    return { value: undefined, status: STATUS_OK }
+  } catch (error) {
+    return { result: "", status: { errorCode: ERROR_CODE.GENERIC, reason: `${error}` } };
+
   }
 }
 type status_ok = string
@@ -49,6 +50,9 @@ const STATUS_OK = "OK";
 
 type ErrorCode = 1 | 4
 const ERROR_CODE = {
+  ADDRESS: 1,
+  GENERIC: 2,
+  PROMISE_ALL: 3,
   SIGNUP: 4
 }
 
@@ -65,8 +69,8 @@ type BcaConnectResult = {
 
 export async function bcaWeb3Connect(address: string): Promise<BcaConnectResult> {
   // return firebase token
-  if (address === undefined) {
-    throw new Error('bcaWeb3Connect: No address provided to bcaWeb3Connect library argument')
+  if ((address === undefined) || (typeof address != "string")) {
+    return { result: "", status: { errorCode: ERROR_CODE.ADDRESS, reason: "bcaWeb3Connect: No address provided to bcaWeb3Connect library argument" } };
   }
   // ------- check if cookie need to create or update -----------
 
@@ -74,7 +78,6 @@ export async function bcaWeb3Connect(address: string): Promise<BcaConnectResult>
   const oneHour = (60 * 60) // in seconds
 
   const cookie = Cookies.get(cookieName);
-  console.log('COOKIE', cookie)
   if (cookie) {
     // cookie already exists
     // TODO check expired
@@ -117,10 +120,9 @@ export async function bcaWeb3Connect(address: string): Promise<BcaConnectResult>
 
   const resolvedBatch: BcaConnectResult = await Promise.all(promiseBatch)
     .then((array:Array<any>):BcaConnectResult => {
-
       return { result: array, status: STATUS_OK };
     }).catch((error:any):BcaConnectResult => {
-      return { result: "", status: { errorCode: ERROR_CODE.SIGNUP, reason: `${error}` } };
+      return { result: "", status: { errorCode: ERROR_CODE.PROMISE_ALL, reason: `${error}` } };
     })
 
   if(resolvedBatch.status != STATUS_OK){
