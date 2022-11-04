@@ -1,6 +1,6 @@
 {
   "name": "bca-web3-lib",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "",
   "main": "./dist/index.cjs",
   "source": "src/index.js",
@@ -13,7 +13,7 @@
   "unpkg": "./dist/index.umd.js",
   "scripts": {
     "test": "node --experimental-vm-modules ./node_modules/.bin/jest",
-    "build": "microbundle",
+    "build": "microbundle --external none",
     "dev": "microbundle watch"
   },
   "author": "",
