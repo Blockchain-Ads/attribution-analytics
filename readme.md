@@ -2,9 +2,7 @@
 
 # Blockchain Ads web3 connect library
 
-> Write a project description
-
-This is a library to connect user across web3 platform.
+> This is a library to connect user across web3 platform.
 
 ## Prerequisites
 
@@ -36,7 +34,27 @@ v17.6.0
 
 ## Getting Started
 
+
+### To install and set up the library
+
+```sh
+$ npm install -S bca-web3-lib
+```
+
+Or if you prefer using Yarn:
+
+```sh
+$ yarn add --dev bca-web3-lib
+```
+
+### Demo
+
 <iframe src="https://codesandbox.io/embed/npm-bcaweb3connect-wgqqty?fontsize=14&hidenavigation=1&theme=dark"
+     style="width:100%; height:500px; border:0; border-radius: 4px; overflow:hidden;"
+     title="npm-bcaWeb3Connect"
+     allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
+     sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
+   ></iframe>
 
 [![Edit npm-bcaWeb3Connect](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/npm-bcaweb3connect-wgqqty?fontsize=14&hidenavigation=1&theme=dark)
 
@@ -49,18 +67,6 @@ Start with cloning this repo on your local machine:
 ```sh
 $ git clone https://github.com/Blockchain-Ads/attribution-analytics.git
 $ cd attribution-analytics
-```
-
-To install and set up the library, run:
-
-```sh
-$ npm install -S bca-web3-lib
-```
-
-Or if you prefer using Yarn:
-
-```sh
-$ yarn add --dev bca-web3-lib
 ```
 
 ### Watching library
