@@ -4,6 +4,7 @@ import {
 import axios from "axios";
 import Cookies from "js-cookie";
 import './id5.js';
+ declare let ID5: any;
 
 const STATUS_OK = "OK";
 const STATUS_FAIL = "FAIL";
@@ -12,7 +13,7 @@ const STATUS_FAIL = "FAIL";
 import {
   ethers
 } from "ethers";
-import jwt_decode from "jwt-decode";
+import jwtDecode , { JwtPayload }  from "jwt-decode";
 
 const cookieName = "BCA-universal-cookie";
 
@@ -40,9 +41,9 @@ async function wait(ref) {
   });
 }
 
-function checkJwtDecode(token){
+function checkJwtDecode(token: string){
   try {
-    return {value:jwt_decode(cookie), status: STATUS_OK};
+    return {value:jwtDecode<JwtPayload>(token), status: STATUS_OK};
   } catch (e) {
     return {value: undefined, status: STATUS_OK}
   }
@@ -63,9 +64,10 @@ export async function bcaWeb3Connect(address) {
   if (cookie) {
     // cookie already exists
     // TODO check expired
-    if (checkJwtDecode(cookie).status == STATUS_OK){
+    const checkedJwt = checkJwtDecode(cookie)
+    if (checkedJwt.status == STATUS_OK){
       // jwt decoded success
-      const cookieDecoded = jwt_decode(cookie);
+      const cookieDecoded = checkedJwt.value;
       const cookieIsExpired = (cookieDecoded.exp + oneHour) < timeNow
       if (!cookieIsExpired) {
         // Cookie not expired
@@ -88,7 +90,6 @@ export async function bcaWeb3Connect(address) {
   // // undefined (cookie not exist before)
   // // Continue to create a cookie
   // }
-  console.log('COOKIE undefined')
 
   // ------- prepare cookie data -----------
   const id5Status = await ID5.init({
