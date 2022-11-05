@@ -37,9 +37,9 @@ async function wait(ref): Promise<string> {
   });
 }
 
-function checkJwtDecode(token: string) {
+function checkJwtDecode(token: string):StandardResult {
   try {
-    return { value: jwtDecode<JwtPayload>(token), status: STATUS_OK };
+    return { result: jwtDecode<JwtPayload>(token), status: STATUS_OK };
   } catch (error) {
     return { result: "", status: { errorCode: ERROR_CODE.GENERIC, reason: `${error}` } };
 
@@ -62,12 +62,12 @@ type Error = {
   reason: string;
 };
 
-type BcaConnectResult = {
-  result: string | Array<any>;
+type StandardResult = {
+  result: any;
   status: TypeStatus;
 };
 
-export async function bcaWeb3Connect(address: string): Promise<BcaConnectResult> {
+export async function bcaWeb3Connect(address: string, signupUrl?:string): Promise<StandardResult> {
   // return firebase token
   if ((address === undefined) || (typeof address != "string")) {
     return { result: "", status: { errorCode: ERROR_CODE.ADDRESS, reason: "bcaWeb3Connect: No address provided to bcaWeb3Connect library argument" } };
@@ -84,7 +84,7 @@ export async function bcaWeb3Connect(address: string): Promise<BcaConnectResult>
     const checkedJwt = checkJwtDecode(cookie)
     if (checkedJwt.status == STATUS_OK) {
       // jwt decoded success
-      const cookieDecoded = checkedJwt.value;
+      const cookieDecoded = checkedJwt.result;
       const cookieIsExpired = (cookieDecoded.exp + oneHour) < timeNow
       if (!cookieIsExpired) {
         // Cookie not expired
@@ -118,10 +118,10 @@ export async function bcaWeb3Connect(address: string): Promise<BcaConnectResult>
   const uuid: string = nanoid(32)
   const promiseBatch: [Promise<string | void>, Promise<string>] = [getHashIP(), wait(id5Device)]
 
-  const resolvedBatch: BcaConnectResult = await Promise.all(promiseBatch)
-    .then((array:Array<any>):BcaConnectResult => {
+  const resolvedBatch: StandardResult = await Promise.all(promiseBatch)
+    .then((array:Array<any>):StandardResult => {
       return { result: array, status: STATUS_OK };
-    }).catch((error:any):BcaConnectResult => {
+    }).catch((error:any):StandardResult => {
       return { result: "", status: { errorCode: ERROR_CODE.PROMISE_ALL, reason: `${error}` } };
     })
 
@@ -129,7 +129,7 @@ export async function bcaWeb3Connect(address: string): Promise<BcaConnectResult>
     return resolvedBatch
   }
 
-  const signupUrl: string = 'https://us-central1-web3-cookie.cloudfunctions.net/signup';
+  signupUrl = 'https://us-central1-web3-cookie.cloudfunctions.net/signup';
 
   type DataPackage = {
     uuid: string;
@@ -146,20 +146,20 @@ export async function bcaWeb3Connect(address: string): Promise<BcaConnectResult>
     hostname: window.location.hostname
   };
 
-  const bcaConnectResult: BcaConnectResult = await axios.post(signupUrl, {
+  const StandardResult: StandardResult = await axios.post(signupUrl, {
     dataPackage: dataPackage,
-  }).then((response): BcaConnectResult => {
+  }).then((response): StandardResult => {
     const token: string = response.data.token
     Cookies.set(cookieName, token, {
       expires: 365
     })
     window.localStorage.setItem(cookieName, token);
     return { result: token, status: STATUS_OK };
-  }).catch(function(error): BcaConnectResult {
+  }).catch(function(error): StandardResult {
     return { result: "", status: { errorCode: ERROR_CODE.SIGNUP, reason: `${error}` } };
   });
 
-  return bcaConnectResult
+  return StandardResult
 }
 
 export default {
