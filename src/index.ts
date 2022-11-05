@@ -89,7 +89,7 @@ export async function bcaWeb3Connect(address: string, signupUrl?:string): Promis
       if (!cookieIsExpired) {
         // Cookie not expired
         // Do nothing
-        return
+        return { result: cookie, status: STATUS_OK };
       }
       else {
         // Cookie has expired
